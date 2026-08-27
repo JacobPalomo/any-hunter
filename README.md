@@ -122,6 +122,17 @@ console.log(snippetIssues);
 
 ---
 
+## 🧠 Auditoría Semántica y Cacería Profunda
+
+A diferencia de linters basados únicamente en texto, Any-Hunter analiza el **Árbol de Sintaxis Abstracta (AST)** y usa el **TypeChecker de TypeScript** para detectar fugas de tipos complejas:
+
+*   🪝 **Parámetros envenenados:** Penaliza funciones que reciben `any` y contaminan su *scope* interno.
+*   🚰 **Fugas de retorno:** Detecta funciones que exponen `any` hacia el exterior.
+*   📦 **Genéricos camuflados:** Atrapa `Promise<any>`, `Array<any>`, o `Record<string, any>`.
+*   👻 **Any Invisible (Semántico):** Detecta variables que no tienen `any` escrito literalmente, pero que lo infirieron de APIs sin tipar (ej. `const data = JSON.parse(res)`).
+
+---
+
 ## 🤖 Integración con GitHub Actions
 
 Puedes integrar Any-Hunter directamente en tus pipelines sin necesidad de instalarlo usando mi Action oficial:

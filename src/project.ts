@@ -1,5 +1,4 @@
 import ts from 'typescript';
-import fs from 'node:fs';
 import path from 'node:path';
 import { analyzeCode } from './analyzer.js';
 import type { Issue } from './types.js';
@@ -61,6 +60,10 @@ export function analyzeProject(
     throw new Error(`Error en la configuración de TypeScript: ${message}`);
   }
 
+  // 1. Crear el Programa de TypeScript para habilitar análisis semántico
+  const program = ts.createProgram(parsedCommandLine.fileNames, parsedCommandLine.options);
+  const checker = program.getTypeChecker();
+
   const allFiles = parsedCommandLine.fileNames;
   const targetFiles = allFiles.filter((file) => !isExcluded(file, excludePatterns));
   const excludedFilesCount = allFiles.length - targetFiles.length;
@@ -69,12 +72,13 @@ export function analyzeProject(
   const projectIssues: Issue[] = [];
 
   for (const fileName of targetFiles) {
-    if (fs.existsSync(fileName)) {
-      const content = fs.readFileSync(fileName, 'utf-8');
-      const lines = content.split(/\r\n|\r|\n/).length;
+    const sourceFile = program.getSourceFile(fileName);
+    if (sourceFile && !sourceFile.isDeclarationFile) {
+      const lines = sourceFile.getFullText().split(/\r\n|\r|\n/).length;
       totalAnalyzedLOC += lines;
 
-      const fileIssues = analyzeCode(fileName, content);
+      // Pasa el sourceFile del program y el checker
+      const fileIssues = analyzeCode(fileName, sourceFile, checker);
       projectIssues.push(...fileIssues);
     }
   }
@@ -82,18 +86,10 @@ export function analyzeProject(
   // Cálculo de penalizaciones
   let totalPenalty = 0;
   for (const issue of projectIssues) {
-    switch (issue.severity) {
-      case 'error':
-        totalPenalty += 5;
-        break
-
-      case 'warning':
-        totalPenalty += 2;
-        break
-
-      default:
-        const exhaustiveCheck: never = issue.severity
-        throw new Error(`Severidad no reconocida: ${exhaustiveCheck}`);
+    if (issue.severity === 'error') {
+      totalPenalty += 5;
+    } else if (issue.severity === 'warning') {
+      totalPenalty += 2;
     }
   }
 

@@ -1,3 +1,4 @@
+import ts from 'typescript'
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { analyzeCode } from './analyzer.js';
@@ -25,7 +26,7 @@ describe('any-hunter AST Analyzer', () => {
 
     assert.equal(issues.length, 1);
     assert.equal(issues[0]!.severity, 'warning');
-    assert.match(issues[0]!.message, /uso explícito de any/);
+    assert.match(issues[0]!.message, /uso explícito de any/i);
   });
 
   test('debe detectar casteo forzado directo (as any)', () => {
@@ -74,6 +75,30 @@ describe('any-hunter AST Analyzer', () => {
     const issues = analyzeCode('test.ts', code);
 
     assert.equal(issues.length, 0);
+  });
+
+  test('debe detectar any oculto en parámetros de funciones (Parámetros envenenados)', () => {
+    const code = 'function procesar(data: any, options: string) {}';
+    const issues = analyzeCode('test.ts', code);
+    assert.equal(issues.length, 1);
+    assert.equal(issues[0]!.severity, 'error');
+    assert.match(issues[0]!.message, /Parámetro envenenado/);
+  });
+
+  test('debe detectar any en tipos de retorno (Fugas de retorno)', () => {
+    const code = 'const fetchUser = (): any => { return {}; }';
+    const issues = analyzeCode('test.ts', code);
+    assert.equal(issues.length, 1);
+    assert.equal(issues[0]!.severity, 'error');
+    assert.match(issues[0]!.message, /Fuga de retorno/);
+  });
+
+  test('debe detectar any escondido en genéricos (Genéricos camuflados)', () => {
+    const code = 'let list: Array<any> = []; const req: Promise<any> = api();';
+    const issues = analyzeCode('test.ts', code);
+    assert.equal(issues.length, 2);
+    assert.match(issues[0]!.message, /Genérico camuflado/);
+    assert.match(issues[1]!.message, /Genérico camuflado/);
   });
 });
 
@@ -133,5 +158,32 @@ test('debe ignorar advertencias si la línea anterior tiene // any-hunter-disabl
   // Solo debe encontrar el error de 'y' en la línea 4
   assert.equal(issues.length, 1);
   assert.equal(issues[0]!.line, 4);
-  assert.match(issues[0]!.message, /uso explícito de any/);
+  assert.match(issues[0]!.message, /uso explícito de any/i);
 });
+
+test('debe detectar any invisible proveniente de llamadas que retornan any (JSON.parse)', () => {
+    // Creamos un program en memoria para probar el TypeChecker
+    const source = 'const parsedData = JSON.parse("{\\"a\\": 1}");';
+    const sourceFile = ts.createSourceFile('test.ts', source, ts.ScriptTarget.Latest, true);
+
+    const host: ts.CompilerHost = {
+      getSourceFile: (name) => (name === 'test.ts' ? sourceFile : undefined),
+      getDefaultLibFileName: () => 'lib.d.ts',
+      writeFile: () => {},
+      getCurrentDirectory: () => '',
+      getCanonicalFileName: (f) => f,
+      useCaseSensitiveFileNames: () => true,
+      getNewLine: () => '\n',
+      fileExists: (f) => f === 'test.ts',
+      readFile: () => '',
+    };
+
+    const program = ts.createProgram(['test.ts'], { target: ts.ScriptTarget.Latest }, host);
+    const checker = program.getTypeChecker();
+
+    const issues = analyzeCode('test.ts', sourceFile, checker);
+    const invisibleAny = issues.find((i) => i.message.includes('Any invisible detectado'));
+
+    assert.ok(invisibleAny);
+    assert.match(invisibleAny.message, /parsedData/);
+  });

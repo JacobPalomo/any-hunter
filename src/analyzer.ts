@@ -1,31 +1,33 @@
 import ts from 'typescript';
 import type { Issue } from './types.js';
 
-export function analyzeCode(fileName: string, sourceText: string): Issue[] {
+export function analyzeCode(
+  fileName: string,
+  sourceTextOrFile: string | ts.SourceFile,
+  checker?: ts.TypeChecker
+): Issue[] {
   const issues: Issue[] = [];
-  const sourceFile = ts.createSourceFile(
-    fileName,
-    sourceText,
-    ts.ScriptTarget.Latest,
-    true
-  );
+  const sourceFile =
+    typeof sourceTextOrFile === 'string'
+      ? ts.createSourceFile(fileName, sourceTextOrFile, ts.ScriptTarget.Latest, true)
+      : sourceTextOrFile;
 
-  // 1. Escanear líneas que tengan el comentario de exclusión local
+  const sourceText = sourceFile.getFullText();
+
+  // 1. Escanear comentarios de exclusión local
   const disabledLines = new Set<number>();
   const lines = sourceText.split(/\r\n|\r|\n/);
   lines.forEach((lineText, index) => {
     if (lineText.includes('// any-hunter-disable-next-line')) {
-      // index es 0-based. La línea actual es index+1, la siguiente (la ignorada) es index+2
       disabledLines.add(index + 2);
     }
   });
 
-  // 2. Escanear comentarios trivia (@ts-ignore, @ts-expect-error, etc.)
-  const fullText = sourceFile.getFullText();
+  // 2. Escanear directivas @ts-ignore, @ts-expect-error, etc.
   const triviaRegex = /\/\/\s*(@ts-(?:ignore|expect-error|nocheck))/g;
   let match: RegExpExecArray | null;
 
-  while ((match = triviaRegex.exec(fullText)) !== null) {
+  while ((match = triviaRegex.exec(sourceText)) !== null) {
     const directive = match[1];
     const pos = match.index;
     const { line, character } = sourceFile.getLineAndCharacterOfPosition(pos);
@@ -39,9 +41,9 @@ export function analyzeCode(fileName: string, sourceText: string): Issue[] {
     });
   }
 
-  // 3. Recorrer el AST para analizar nodos de sintaxis
+  // 3. Recorrer el AST (Sintáctico + Semántico)
   function visit(node: ts.Node) {
-    // Regla: Non-null assertion operator (ej: item!.value)
+    // Regla: Non-null assertion operator (!)
     if (ts.isNonNullExpression(node)) {
       const { line, character } = sourceFile.getLineAndCharacterOfPosition(node.getStart());
       issues.push({
@@ -53,7 +55,7 @@ export function analyzeCode(fileName: string, sourceText: string): Issue[] {
       });
     }
 
-    // Regla: Doble casteo forzado (ej: x as any as T)
+    // Regla: Doble casteo forzado y casteo directo
     if (ts.isAsExpression(node) || ts.isTypeAssertionExpression(node)) {
       const inner = node.expression;
       if (ts.isAsExpression(inner) || ts.isTypeAssertionExpression(inner)) {
@@ -86,26 +88,63 @@ export function analyzeCode(fileName: string, sourceText: string): Issue[] {
       }
     }
 
-    // Regla: Declaración explícita de any (ej: let x: any)
-    if (
-      node.kind === ts.SyntaxKind.AnyKeyword &&
-      node.parent?.kind !== ts.SyntaxKind.AsExpression &&
-      node.parent?.kind !== ts.SyntaxKind.TypeAssertionExpression
-    ) {
+    // Regla: Sintaxis explícita de 'any'
+    if (node.kind === ts.SyntaxKind.AnyKeyword) {
+      const parent = node.parent;
       const { line, character } = sourceFile.getLineAndCharacterOfPosition(node.getStart());
-      issues.push({
-        file: fileName,
-        line: line + 1,
-        character: character + 1,
-        message: 'Se detectó uso explícito de any en una declaración. Prefiere unknown o un tipo específico.',
-        severity: 'warning',
-      });
+      const baseIssue = { file: fileName, line: line + 1, character: character + 1, severity: 'warning' as const };
+
+      if (parent && parent.kind !== ts.SyntaxKind.AsExpression && parent.kind !== ts.SyntaxKind.TypeAssertionExpression) {
+        if (parent.kind === ts.SyntaxKind.Parameter) {
+          issues.push({
+            ...baseIssue,
+            message: 'Parámetro envenenado: Se declaró un argumento como any. Propaga pérdida de tipos al interior de la función.',
+            severity: 'error',
+          });
+        } else if (
+          parent.kind === ts.SyntaxKind.FunctionDeclaration ||
+          parent.kind === ts.SyntaxKind.MethodDeclaration ||
+          parent.kind === ts.SyntaxKind.ArrowFunction ||
+          parent.kind === ts.SyntaxKind.FunctionExpression
+        ) {
+          issues.push({
+            ...baseIssue,
+            message: 'Fuga de retorno: La función retorna explícitamente any. El llamador pierde la seguridad de tipos.',
+            severity: 'error',
+          });
+        } else if (parent.kind === ts.SyntaxKind.TypeReference) {
+          issues.push({
+            ...baseIssue,
+            message: 'Genérico camuflado: any como argumento genérico (ej. Promise<any>). Usa un tipo concreto o unknown.',
+          });
+        } else {
+          issues.push({
+            ...baseIssue,
+            message: 'Uso explícito de any en declaración. Prefiere unknown o un tipo específico.',
+          });
+        }
+      }
+    }
+
+    // Regla Semántica: Any invisible inferido por APIs sin tipo (ej: JSON.parse)
+    if (checker && ts.isVariableDeclaration(node) && node.initializer && !node.type) {
+      const type = checker.getTypeAtLocation(node.initializer);
+      // Validar si el tipo resultante es Any intrínseco (TypeFlags.Any = 1)
+      if (type.flags & ts.TypeFlags.Any) {
+        const { line, character } = sourceFile.getLineAndCharacterOfPosition(node.getStart());
+        issues.push({
+          file: fileName,
+          line: line + 1,
+          character: character + 1,
+          message: `Any invisible detectado: La variable '${node.name.getText()}' infiere 'any' implícitamente de su valor (ej: JSON.parse). Define un tipo explícito o valida con un type guard.`,
+          severity: 'warning',
+        });
+      }
     }
 
     ts.forEachChild(node, visit);
   }
 
   visit(sourceFile);
-
-  return issues.filter(issue => !disabledLines.has(issue.line));
+  return issues.filter((issue) => !disabledLines.has(issue.line));
 }

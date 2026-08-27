@@ -5,6 +5,16 @@ Todos los cambios notables en este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/)
 y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.1.0] - 2026-08-27
+
+### Added
+- **Auditoría Semántica (TypeChecker):** Detección de "Any Invisible" implícito en variables provenientes de funciones que retornan `any` (ej: `JSON.parse`).
+- **Cacería Profunda de AST:** 
+  - Detección de parámetros envenenados (`function(data: any)`).
+  - Detección de fugas de retorno (`(): any => {}`).
+  - Detección de genéricos camuflados (`Promise<any>`).
+- Clasificación de severidad estricta (`error` para retornos y parámetros, `warning` para variables locales).
+
 ## [1.0.0] - 2026-08-27
 
 ¡Lanzamiento de la versión estable 1.0.0! Any-Hunter ahora es una herramienta completa para auditoría a nivel empresarial.

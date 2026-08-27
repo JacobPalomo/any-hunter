@@ -12,13 +12,31 @@ describe('any-hunter AST Analyzer', () => {
     assert.match(issues[0]!.message, /uso explícito de any/);
   });
 
+  test('debe detectar casteo forzado directo (as any)', () => {
+    const code = 'const res = obj as any;';
+    const issues = analyzeCode('test.ts', code);
+
+    assert.equal(issues.length, 1);
+    assert.equal(issues[0]!.severity, 'warning');
+    assert.match(issues[0]!.message, /Casteo forzado a any/);
+  });
+
+  test('debe detectar non-null assertion operator (!)', () => {
+    const code = 'const length = user!.profile!.name.length;';
+    const issues = analyzeCode('test.ts', code);
+
+    assert.equal(issues.length, 2);
+    assert.equal(issues[0]!.severity, 'warning');
+    assert.match(issues[0]!.message, /non-null assertion/);
+  });
+
   test('debe detectar doble casteo (as any as Type)', () => {
     const code = 'const res = (value as any as string);';
     const issues = analyzeCode('test.ts', code);
 
     const doubleCast = issues.find((i) => i.message.includes('Doble casteo'));
     assert.ok(doubleCast);
-    assert.equal(doubleCast?.severity, 'error');
+    assert.equal(doubleCast.severity, 'error');
   });
 
   test('debe atrapar directivas @ts-ignore y evitar falsos positivos', () => {

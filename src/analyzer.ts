@@ -1,87 +1,100 @@
 import ts from 'typescript';
 import type { Issue } from './types.js';
 
-export function analyzeCode(fileName: string, code: string): Issue[] {
+export function analyzeCode(fileName: string, sourceText: string): Issue[] {
   const issues: Issue[] = [];
-  const visitedComments = new Set<number>();
-
   const sourceFile = ts.createSourceFile(
     fileName,
-    code,
+    sourceText,
     ts.ScriptTarget.Latest,
     true
   );
 
-  function walk(node: ts.Node) {
-    const sourceFile = node.getSourceFile();
-    const nodeStart = node.getStart(sourceFile);
-    const position = sourceFile.getLineAndCharacterOfPosition(nodeStart);
+  // 1. Escanear comentarios trivia (@ts-ignore, @ts-expect-error, etc.)
+  const fullText = sourceFile.getFullText();
+  const triviaRegex = /\/\/\s*(@ts-(?:ignore|expect-error|nocheck))/g;
+  let match: RegExpExecArray | null;
 
-    // 1. Detección de comentarios de supresión (@ts-ignore, etc.)
-    const fullText = sourceFile.getFullText();
-    const commentRanges = ts.getLeadingCommentRanges(fullText, node.pos);
+  while ((match = triviaRegex.exec(fullText)) !== null) {
+    const directive = match[1];
+    const pos = match.index;
+    const { line, character } = sourceFile.getLineAndCharacterOfPosition(pos);
 
-    if (commentRanges) {
-      for (const range of commentRanges) {
-        if (visitedComments.has(range.pos)) continue;
-        visitedComments.add(range.pos);
+    issues.push({
+      file: fileName,
+      line: line + 1,
+      character: character + 1,
+      message: `Directiva de supresión detectada: ${directive}`,
+      severity: 'error',
+    });
+  }
 
-        const commentText = fullText.substring(range.pos, range.end);
-        const DIRECTIVE_REGEX = /^\s*(\/\/|\/\*)\s*@(ts-ignore|ts-expect-error|ts-nocheck)/;
-        const match = commentText.match(DIRECTIVE_REGEX);
-
-        if (match) {
-          const directiveName = `@${match[2]}`;
-          const commentPosition = sourceFile.getLineAndCharacterOfPosition(range.pos);
-
-          issues.push({
-            file: sourceFile.fileName,
-            line: commentPosition.line + 1,
-            character: commentPosition.character + 1,
-            message: `Trampa crítica: Uso de comentario de supresión (${directiveName})`,
-            severity: 'error',
-          });
-        }
-      }
-    }
-
-    // 2. Detección de doble casteo (as any as Type)
-    if (ts.isAsExpression(node)) {
-      const innerExpression = node.expression;
-
-      if (ts.isAsExpression(innerExpression)) {
-        const innerTypeKind = innerExpression.type.kind;
-
-        const isAnyOrUnknown =
-          innerTypeKind === ts.SyntaxKind.AnyKeyword ||
-          innerTypeKind === ts.SyntaxKind.UnknownKeyword;
-
-        if (isAnyOrUnknown) {
-          issues.push({
-            file: sourceFile.fileName,
-            line: position.line + 1,
-            character: position.character + 1,
-            message: 'Trampa crítica: Doble casteo detectado (bypass de tipos)',
-            severity: 'error',
-          });
-        }
-      }
-    }
-
-    // 3. Detección de any explícito
-    if (node.kind === ts.SyntaxKind.AnyKeyword) {
+  // 2. Recorrer el AST para analizar nodos de sintaxis
+  function visit(node: ts.Node) {
+    // Regla: Non-null assertion operator (ej: item!.value)
+    if (ts.isNonNullExpression(node)) {
+      const { line, character } = sourceFile.getLineAndCharacterOfPosition(node.getStart());
       issues.push({
-        file: sourceFile.fileName,
-        line: position.line + 1,
-        character: position.character + 1,
-        message: 'Trampa detectada: uso explícito de any',
+        file: fileName,
+        line: line + 1,
+        character: character + 1,
+        message: 'Uso del operador non-null assertion (!). Puede causar errores en runtime si el valor es null o undefined.',
         severity: 'warning',
       });
     }
 
-    ts.forEachChild(node, walk);
+    // Regla: Doble casteo forzado (ej: x as any as T)
+    if (ts.isAsExpression(node) || ts.isTypeAssertionExpression(node)) {
+      const inner = node.expression;
+      if (ts.isAsExpression(inner) || ts.isTypeAssertionExpression(inner)) {
+        const innerType = inner.type;
+        if (
+          innerType.kind === ts.SyntaxKind.AnyKeyword ||
+          innerType.kind === ts.SyntaxKind.UnknownKeyword
+        ) {
+          const { line, character } = sourceFile.getLineAndCharacterOfPosition(node.getStart());
+          issues.push({
+            file: fileName,
+            line: line + 1,
+            character: character + 1,
+            message: 'Doble casteo forzado detectado (ej: as any as T). Rompe por completo la seguridad de tipos.',
+            severity: 'error',
+          });
+        }
+      }
+
+      // Regla: Casteo directo a any (ej: x as any)
+      if (node.type.kind === ts.SyntaxKind.AnyKeyword) {
+        const { line, character } = sourceFile.getLineAndCharacterOfPosition(node.getStart());
+        issues.push({
+          file: fileName,
+          line: line + 1,
+          character: character + 1,
+          message: 'Casteo forzado a any (as any). Prefiere unknown o tipar correctamente la estructura.',
+          severity: 'warning',
+        });
+      }
+    }
+
+    // Regla: Declaración explícita de any (ej: let x: any)
+    if (
+      node.kind === ts.SyntaxKind.AnyKeyword &&
+      node.parent.kind !== ts.SyntaxKind.AsExpression &&
+      node.parent.kind !== ts.SyntaxKind.TypeAssertionExpression
+    ) {
+      const { line, character } = sourceFile.getLineAndCharacterOfPosition(node.getStart());
+      issues.push({
+        file: fileName,
+        line: line + 1,
+        character: character + 1,
+        message: 'Se detectó uso explícito de any en una declaración. Prefiere unknown o un tipo específico.',
+        severity: 'warning',
+      });
+    }
+
+    ts.forEachChild(node, visit);
   }
 
-  walk(sourceFile);
+  visit(sourceFile);
   return issues;
 }

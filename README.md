@@ -59,6 +59,8 @@ any-hunter ./apps/web/tsconfig.json --threshold=95
 | **Directivas de supresión** (`@ts-ignore`, `@ts-expect-error`, `@ts-nocheck`) | `ERROR` | -5 pts |
 | **Doble casteo forzado** (`as any as T`, `as unknown as T`) | `ERROR` | -5 pts |
 | **Uso explícito de `any`** (`let x: any`) | `WARN` | -2 pts |
+| **Casteo directo a `any`** (`expr as any`) | `WARN` | -2 pts |
+| **Operador non-null assertion** (`user!.profile`) | `WARN` | -2 pts |
 
 ---
 

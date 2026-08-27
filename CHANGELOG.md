@@ -5,6 +5,13 @@ Todos los cambios notables en este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/)
 y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [0.3.0] - 2026-08-27
+
+### Added
+- Detección del operador non-null assertion (`!`) para prevenir fallos en runtime por valores `null` o `undefined`.
+- Detección de casteo forzado directo (`expr as any`).
+- Nuevas pruebas unitarias para validar las reglas añadidas.
+
 ## [0.2.0] - 2026-08-27
 
 ### Added

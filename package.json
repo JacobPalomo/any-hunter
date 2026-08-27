@@ -1,7 +1,7 @@
 {
   "name": "any-hunter",
-  "version": "1.1.1",
-  "description": "Auditor estático del AST para medir la salud de tipos en proyectos TypeScript",
+  "version": "1.1.2",
+  "description": "Zero-dependency AST & Semantic Type-Health Auditor for TypeScript",
   "type": "module",
   "bin": {
     "any-hunter": "./dist/index.js"
@@ -23,15 +23,19 @@
     "test": "tsx --test src/**/*.test.ts",
     "audit": "node dist/index.js ./tsconfig.json",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm test && npm run build"
   },
   "keywords": [
     "typescript",
+    "type-health",
+    "type-safety",
     "ast",
     "linter",
-    "type-safety",
-    "code-analysis",
-    "cli"
+    "static-analysis",
+    "sarif",
+    "code-quality",
+    "zero-dependencies",
+    "github-actions"
   ],
   "author": {
     "name": "Jacob Palomo",
@@ -41,7 +45,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/JacobPalomo/any-hunter.git"
+    "url": "https://github.com/JacobPalomo/any-hunter.git"
   },
   "bugs": {
     "url": "https://github.com/JacobPalomo/any-hunter/issues"
@@ -50,11 +54,12 @@
   "engines": {
     "node": ">=18.0.0"
   },
+  "dependencies": {
+    "typescript": "^5.9.3"
+  },
   "devDependencies": {
     "@types/node": "^26.3.0",
-    "ts-node": "^10.9.2",
-    "tsx": "^4.23.12",
-    "typescript": "^5.9.3"
+    "tsx": "^4.23.12"
   },
   "allowScripts": {
     "esbuild@0.28.2": true

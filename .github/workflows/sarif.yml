@@ -1,0 +1,42 @@
+name: Security & Type Audit (SARIF)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 0 * * 1' # Ejecución semanal automática (lunes a medianoche)
+
+jobs:
+  sarif-audit:
+    name: Any-Hunter SARIF Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write # Requerido para subir resultados a la pestaña Security
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Compilar proyecto
+        run: npm run build
+
+      - name: Ejecutar Any-Hunter con exportación SARIF
+        run: node dist/index.js ./tsconfig.json --sarif > results.sarif
+        continue-on-error: true # Permite subir el reporte incluso si hay incidencias
+
+      - name: Subir reporte SARIF a GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
+          category: any-hunter

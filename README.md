@@ -1,69 +1,93 @@
+<div align="center">
+
 # 🎯 any-hunter
 
+**Zero-dependency AST & Semantic Type-Health Auditor for TypeScript**
+
 [![CI & Type Health Audit](https://github.com/JacobPalomo/any-hunter/actions/workflows/ci.yml/badge.svg)](https://github.com/JacobPalomo/any-hunter/actions/workflows/ci.yml)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg?logo=typescript)](https://www.typescriptlang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![Zero Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](https://github.com/JacobPalomo/any-hunter)
 
-> Analizador estático ultraligero con cero dependencias en tiempo de ejecución para auditar la salud de tipos en proyectos de TypeScript.
+[English](README.md) | [Español](README.es.md)
 
-`any-hunter` recorre el Árbol de Sintaxis Abstracta (AST) de TypeScript para detectar trampas de tipos comunes, calcular una puntuación de salud (**Type-Health Score**) y bloquear pipelines de CI/CD cuando el código no cumple con el estándar de calidad.
+<p align="center">
+  Stop type erosion before it hits production. Any-Hunter analyzes your AST and uses the TypeScript compiler's TypeChecker to calculate a real-time <b>Type-Health Score (0–100)</b>, hunt down invisible <code>any</code>s, and enforce quality gates in your CI/CD pipelines.
+</p>
 
----
-
-## ✨ Características
-
-- 🔍 **Detección vía AST:** Cero expresiones regulares sobre código ejecutable; inspección nativa del compilador.
-- 💬 **Inspección de Trivia (Comentarios):** Localiza directivas de supresión de compilador (`@ts-ignore`, `@ts-expect-error`, `@ts-nocheck`).
-- 🛑 **Detección de Doble Casteo:** Identifica bypass de tipos forzados (`as any as T` o `as unknown as T`).
-- 📊 **Type-Health Score:** Métrica ponderada (0 a 100) calculada contra el volumen real de líneas de código (LOC).
-- 🚀 **Listo para CI/CD:** Termina con código de salida UNIX (`0` para éxito, `1` para fallo) según el umbral configurado.
-- ⚡ **Zero Runtime Dependencies:** Construido únicamente sobre la Compiler API de TypeScript.
+</div>
 
 ---
 
-## 🚀 Instalación y Uso Rápido
+## ✨ Features
 
-Ejecuta directamente sin instalar usando `npx`:
+- 🔍 **Deep AST Inspection:** Zero regex on source code; parses actual syntax trees via TypeScript's Compiler API.
+- 🧠 **Semantic Analysis (TypeChecker):** Catches "Invisible `any`s" inferred from unvalidated calls like `JSON.parse()` or untyped third-party packages.
+- 🪝 **Context-Aware Penalties:** Treats poisoned function parameters and leaky return types with higher severity than localized variables.
+- 💬 **Trivia Directive Auditing:** Identifies compiler bypass comments (`@ts-ignore`, `@ts-expect-error`, `@ts-nocheck`).
+- 🛑 **Forced Double Casting Detection:** Blocks unsafe type escape hatches (`as any as T`, `as unknown as T`).
+- 📊 **Quantified Type-Health Score:** Weighted score (0 to 100) normalized against your project's total Lines of Code (LOC).
+- 🛡️ **SARIF & GitHub Step Summaries:** Native integration with GitHub Code Scanning (Security tab) and CI job summaries without extra plugins.
+- ⚡ **Zero Runtime Dependencies:** Ultra-fast, lightweight, and completely self-contained.
 
-```bash
-npx any-hunter ./tsconfig.json
-```
+---
 
-Ejecuta el asistente de inicialización para configurar tu proyecto rápidamente:
+## 🚀 Quick Start
+
+### 1. Initialize Configuration (Recommended)
+
+Generate a pre-configured `.anyhunterrc.json` in your repository:
+
 ```bash
 npx any-hunter --init
 ```
 
-Esto creará un archivo .anyhunterrc.json con los valores recomendados.
+### 2. Run Audit
 
-O instala globalmente:
+Audit your default `./tsconfig.json`:
+
+```bash
+npx any-hunter
+```
+
+Or target a specific project with a minimum score threshold:
+
+```bash
+npx any-hunter ./apps/api/tsconfig.json --threshold=90
+```
+
+### Global Installation
 
 ```bash
 npm install -g any-hunter
-any-hunter
+any-hunter ./tsconfig.json
 ```
 
 ---
 
-## 🤫 Ignorar líneas específicas
+## 🤫 Inline Rule Disabling
 
-Si tienes un caso donde un tipo any está justificado, puedes omitir la revisión en la línea inmediatamente inferior usando este comentario:
+If an explicit `any` or workaround is strictly necessary and intentional, suppress the warning for that single line:
 
 ```typescript
 // any-hunter-disable-next-line
-const data = JSON.parse(response) as any;
+const payload = JSON.parse(rawResponse) as any;
 ```
 
 ---
 
-## ⚙️ Archivo de Configuración (`.anyhunterrc.json`)
+## ⚙️ Configuration File (`.anyhunterrc.json`)
 
-Puedes crear un archivo `.anyhunterrc.json` en la raíz de tu proyecto para evitar pasar flags en cada ejecución:
+Place a `.anyhunterrc.json` (or `.anyhunterrc`, `anyhunter.config.json`) in your project root to standardize quality standards across your team:
 
 ```json
 {
   "threshold": 85,
   "exclude": [
     "**/*.test.ts",
-    "src/legacy/**"
+    "**/*.spec.ts",
+    "src/legacy/**",
+    "dist/**"
   ],
   "tsconfig": "./tsconfig.json"
 }
@@ -71,116 +95,143 @@ Puedes crear un archivo `.anyhunterrc.json` en la raíz de tu proyecto para evit
 
 ---
 
-## ⚙️ Opciones de CLI
+## 🛠️ CLI Reference
 
-| Opción | Descripción | Valor por defecto |
-| :--- | :--- | :--- |
-| `[ruta]` | Ruta al archivo `tsconfig.json` del proyecto | `./tsconfig.json` |
-| `--init` | Genera un archivo `.anyhunterrc.json` base. | - |
-| `--sarif` | Exporta los resultados en formato SARIF (Ideal para la pestaña Security de GitHub). | - |
-| `--config=ruta` | Ruta personalizada a un archivo de configuración | `.anyhunterrc.json`
-| `--threshold=N` | Puntuación mínima requerida (0-100) para aprobar en CI/CD | `80` |
-| `--exclude="patrón"` | Patrones glob separados por coma para ignorar archivos | - |
-| `--json` | Emite el reporte en formato JSON crudo por `stdout` | `false` |
-
-### Ejemplos:
-
-```bash
-# Auditar un proyecto específico con umbral estricto del 95%
-any-hunter ./apps/web/tsconfig.json --threshold=95
+```text
+any-hunter [tsconfigPath] [options]
 ```
+
+| Option | Description | Default |
+| :--- | :--- | :--- |
+| `[tsconfigPath]` | Path to target `tsconfig.json` | `./tsconfig.json` |
+| `--init` | Generates a starter `.anyhunterrc.json` file | - |
+| `--threshold=N` | Minimum required Type-Health Score (0–100) to pass | `80` (or config file) |
+| `--exclude="p1,p2"` | Comma-separated glob patterns to exclude files | `[]` |
+| `--config=path` | Custom path to configuration file | Auto-detected |
+| `--sarif`, `--format=sarif` | Outputs results in standard SARIF format for security dashboards | `false` |
+| `--json`, `--format=json` | Outputs raw report in structured JSON format | `false` |
 
 ---
 
-## 💻 Uso Programático (API)
+## 📋 Audit Rules & Severity Weights
 
-Puedes importar y usar el motor de `any-hunter` directamente en tus scripts de TypeScript o JavaScript:
+Any-Hunter calculates your score based on the density of issues relative to your Lines of Code (LOC):
+
+$$\text{Penalty Factor} = \left(\frac{\sum \text{Penalties}}{\text{Total LOC}}\right) \times 100$$
+$$\text{Type-Health Score} = \max(0, 100 - \text{Penalty Factor})$$
+
+| Rule | Severity | Penalty | Description |
+| :--- | :--- | :--- | :--- |
+| **Compiler Suppression** | `ERROR` | **-5 pts** | Directives like `// @ts-ignore`, `@ts-expect-error`, or `@ts-nocheck` |
+| **Forced Double Casting** | `ERROR` | **-5 pts** | Type bypasses such as `x as any as T` or `x as unknown as T` |
+| **Poisoned Parameters** | `ERROR` | **-5 pts** | Function parameters explicitly typed as `any` (`fn(data: any)`) |
+| **Leaky Return Types** | `ERROR` | **-5 pts** | Functions declaring `any` as return type (`fn(): any`) |
+| **Invisible `any` (Semantic)** | `WARN` | **-2 pts** | Variables implicitly typed as `any` from untyped APIs (`JSON.parse`) |
+| **Disguised Generics** | `WARN` | **-2 pts** | Passing `any` into generic references (`Promise<any>`, `Array<any>`) |
+| **Explicit `any`** | `WARN` | **-2 pts** | Local variable or property declarations typed as `any` |
+| **Direct Cast to `any`** | `WARN` | **-2 pts** | Explicit assertions (`value as any`) |
+| **Non-Null Assertion** | `WARN` | **-2 pts** | Use of the non-null assertion operator (`user!.profile`) |
+
+---
+
+## 💻 Programmatic API
+
+You can embed Any-Hunter directly into custom Node.js/TypeScript toolchains:
 
 ```typescript
 import { analyzeProject, analyzeCode } from 'any-hunter';
 
-// Analizar un proyecto completo
-const { projectScore, projectIssues } = analyzeProject('./tsconfig.json');
-console.log(`Puntaje de salud: ${projectScore}/100`);
+// 1. Audit an entire project
+const result = analyzeProject('./tsconfig.json', ['**/*.test.ts']);
+console.log(`Type-Health Score: ${result.projectScore}/100`);
+console.log(`Analyzed LOC: ${result.totalAnalyzedLOC}`);
 
-// Analizar código en memoria
-const snippetIssues = analyzeCode('snippet.ts', 'let x: any = 10;');
-console.log(snippetIssues);
+// 2. Audit a single code snippet in memory
+const issues = analyzeCode('virtual.ts', 'let x: any = 42;');
+console.log(issues);
 ```
 
 ---
 
-## 📋 Reglas Auditadas
+## 🤖 GitHub Actions Integration
 
-| Regla | Severidad | Penalización |
-| :--- | :--- | :--- |
-| **Directivas de supresión** (`@ts-ignore`, `@ts-expect-error`, `@ts-nocheck`) | `ERROR` | -5 pts |
-| **Doble casteo forzado** (`as any as T`, `as unknown as T`) | `ERROR` | -5 pts |
-| **Uso explícito de `any`** (`let x: any`) | `WARN` | -2 pts |
-| **Casteo directo a `any`** (`expr as any`) | `WARN` | -2 pts |
-| **Operador non-null assertion** (`user!.profile`) | `WARN` | -2 pts |
+Run Any-Hunter natively in your GitHub CI/CD workflows:
 
----
-
-## 🧠 Auditoría Semántica y Cacería Profunda
-
-A diferencia de linters basados únicamente en texto, Any-Hunter analiza el **Árbol de Sintaxis Abstracta (AST)** y usa el **TypeChecker de TypeScript** para detectar fugas de tipos complejas:
-
-*   🪝 **Parámetros envenenados:** Penaliza funciones que reciben `any` y contaminan su *scope* interno.
-*   🚰 **Fugas de retorno:** Detecta funciones que exponen `any` hacia el exterior.
-*   📦 **Genéricos camuflados:** Atrapa `Promise<any>`, `Array<any>`, o `Record<string, any>`.
-*   👻 **Any Invisible (Semántico):** Detecta variables que no tienen `any` escrito literalmente, pero que lo infirieron de APIs sin tipar (ej. `const data = JSON.parse(res)`).
-
----
-
-## 🤖 Integración con GitHub Actions
-
-Puedes integrar Any-Hunter directamente en tus pipelines sin necesidad de instalarlo usando mi Action oficial:
+### Standard Quality Gate
 
 ```yaml
+name: Type Health CI
+
+on: [push, pull_request]
+
 jobs:
   audit-types:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout del código
+      - name: Checkout repository
         uses: actions/checkout@v4
-      
-      - name: Validar tipos con Any-Hunter
-        uses: JacobPalomo/any-hunter@v0.9.0
+
+      - name: Audit TypeScript Health
+        uses: JacobPalomo/any-hunter@v1.1.1
         with:
-          threshold: 90
+          threshold: 85
           exclude: '**/*.test.ts'
+```
+
+### GitHub Code Scanning (SARIF Export)
+
+Export issues directly to your repository's **Security > Code scanning** tab:
+
+```yaml
+name: Security & Type Audit
+
+on: [push, pull_request]
+
+jobs:
+  sarif-audit:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Any-Hunter with SARIF output
+        run: npx any-hunter --sarif > results.sarif
+        continue-on-error: true
+
+      - name: Upload SARIF to GitHub Security Tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
 ```
 
 ---
 
-## 🪝 Integración Local (Git Hooks con Husky)
+## 🪝 Local Git Hooks (Husky)
 
-Para evitar que tu equipo haga commits de código que reduzca la salud de tipos por debajo del umbral permitido, puedes integrar Any-Hunter con [Husky](https://typicode.github.io/husky/).
+Prevent bad typing practices before code is committed to Git:
 
-Como Any-Hunter calcula un **Type-Health Score global**, es ideal ejecutarlo sobre todo el proyecto justo antes de hacer un commit o un push.
+**1. Install and initialize Husky:**
 
-**1. Instalar e inicializar Husky:**
 ```bash
 npm install -D husky
 npx husky init
 ```
 
-**2. Configurar el hook de pre-commit:**
-Abre el archivo `.husky/pre-commit` generado y añade Any-Hunter:
+**2. Add Any-Hunter to `.husky/pre-commit`:**
 
 ```bash
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-echo "🔍 Ejecutando Any-Hunter..."
+echo "🔍 Running Any-Hunter Type Audit..."
 npx any-hunter
 ```
 
-¡Listo! Ahora, si alguien intenta hacer un `git commit` y su código contiene demasiados `any` (bajando el puntaje por debajo de tu `threshold`), **el commit será bloqueado automáticamente** hasta que corrijan los tipos.
+If a commit introduces type violations that lower the project score below the threshold, **the commit will be blocked locally**.
 
 ---
 
-## 📄 Licencia
+## 📄 License
 
-MIT
+Distributed under the [MIT License](LICENSE). Built by [Jacob Palomo](https://github.com/JacobPalomo/any-hunter).

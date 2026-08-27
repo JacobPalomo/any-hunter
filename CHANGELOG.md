@@ -1,95 +1,105 @@
 # Changelog
 
-Todos los cambios notables en este proyecto serán documentados en este archivo.
+All notable changes to this project will be documented in this file.
 
-El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/)
-y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.1.2] - 2026-08-27
+
+### Fixed
+- Moved `typescript` to runtime `dependencies` ensuring standalone execution via `npx` and global installs without missing module errors.
+
+### Added
+- Native GitHub SARIF Code Scanning workflow (`.github/workflows/sarif.yml`).
+- Official MIT `LICENSE` file.
+- Bilingual documentation (`README.es.md` and `CHANGELOG.es.md`).
 
 ## [1.1.1] - 2026-08-27
 
-### Docs
-- Se añadió la guía oficial de integración con Git Hooks (Husky) en el `README.md` para validaciones locales pre-commit.
+### Added
+- Added official Git Hooks integration guide (Husky) in `README.md` for local pre-commit validations.
 
 ## [1.1.0] - 2026-08-27
 
 ### Added
-- **Auditoría Semántica (TypeChecker):** Detección de "Any Invisible" implícito en variables provenientes de funciones que retornan `any` (ej: `JSON.parse`).
-- **Cacería Profunda de AST:** 
-  - Detección de parámetros envenenados (`function(data: any)`).
-  - Detección de fugas de retorno (`(): any => {}`).
-  - Detección de genéricos camuflados (`Promise<any>`).
-- Clasificación de severidad estricta (`error` para retornos y parámetros, `warning` para variables locales).
+- **Semantic Auditing (TypeChecker):** Detection of implicit "Invisible `any`" in variables originating from functions returning `any` (e.g., `JSON.parse`).
+- **Deep AST Hunting:**
+  - Detection of poisoned function parameters (`function(data: any)`).
+  - Detection of leaky return types (`(): any => {}`).
+  - Detection of disguised generics (`Promise<any>`).
+- Strict severity classification (`error` for return types and parameters, `warning` for local variables).
 
 ## [1.0.0] - 2026-08-27
 
-¡Lanzamiento de la versión estable 1.0.0! Any-Hunter ahora es una herramienta completa para auditoría a nivel empresarial.
+Stable 1.0.0 release. Any-Hunter is now a comprehensive, enterprise-ready type-health auditor.
 
 ### Added
-- **Asistente de Inicialización (`--init`):** Genera automáticamente un archivo base `.anyhunterrc.json`.
-- **Formato SARIF (`--sarif`):** Soporte de exportación de reportes al estándar SARIF, permitiendo su integración con la pestaña *Security / Code Scanning* de GitHub.
-- **Exclusiones por línea (`// any-hunter-disable-next-line`):** Capacidad de saltarse el linter en líneas específicas de código justificado.
+- **Initialization Wizard (`--init`):** Automatically scaffolds a base `.anyhunterrc.json` configuration file.
+- **SARIF Output (`--sarif`):** Support for exporting reports in standard SARIF format for native integration with GitHub *Security / Code Scanning*.
+- **Inline Suppressions (`// any-hunter-disable-next-line`):** Ability to bypass linter checks on specific lines for justified exceptions.
 
 ## [0.9.0] - 2026-08-27
 
 ### Added
-- Integración oficial para GitHub Actions (`action.yml`). Permite usar `uses: JacobPalomo/any-hunter@v0.9.0` en workflows.
+- Official GitHub Action integration (`action.yml`). Allows using `uses: JacobPalomo/any-hunter@v0.9.0` in CI/CD workflows.
 
 ## [0.8.0] - 2026-08-27
 
 ### Added
-- Entrada programática (`src/api.ts` -> `dist/api.js`) para consumir `any-hunter` como librería de Node.js.
-- Exportación de tipos TypeScript (`dist/api.d.ts`) y configuración de `exports` en `package.json`.
-- Pruebas unitarias para validar las exportaciones del punto de entrada programático.
+- Programmatic entry point (`src/api.ts` -> `dist/api.js`) to consume `any-hunter` as a Node.js library.
+- TypeScript declaration exports (`dist/api.d.ts`) and `exports` map configuration in `package.json`.
+- Unit tests validating programmatic API exports.
 
 ## [0.7.0] - 2026-08-27
 
 ### Added
-- Soporte para archivo de configuración `.anyhunterrc.json` (o `.anyhunterrc` / `anyhunter.config.json`).
-- Bandera `--config=ruta` para especificar rutas arbitrarias a archivos de configuración.
-- Fusión automática de exclusiones y umbrales entre archivo de configuración y flags de terminal.
+- Support for configuration files (`.anyhunterrc.json`, `.anyhunterrc`, `anyhunter.config.json`).
+- `--config=path` flag to specify custom configuration file paths.
+- Automatic merging of exclusion patterns and thresholds between configuration files and CLI flags.
 
 ## [0.6.0] - 2026-08-27
 
 ### Added
-- Soporte para GitHub Actions Step Summary (`$GITHUB_STEP_SUMMARY`), renderizando un reporte visual en Markdown con tablas de métricas y desglose de incidencias en el resumen del workflow.
+- Support for GitHub Actions Step Summary (`$GITHUB_STEP_SUMMARY`), rendering visual Markdown reports with metric tables and issue breakdowns directly in workflow summaries.
 
 ## [0.5.0] - 2026-08-27
 
 ### Added
-- Bandera `--exclude` para ignorar archivos y carpetas mediante patrones glob (ej: `--exclude="*.test.ts,src/legacy/**"`).
-- Nueva función auxiliar `isExcluded` con soporte para comodines (`*`, `**`, `?`) sin dependencias externas.
-- Métrica de conteo de archivos excluidos en reportes de terminal y JSON.
+- `--exclude` flag to ignore files and directories using glob patterns (e.g., `--exclude="*.test.ts,src/legacy/**"`).
+- Helper function `isExcluded` with wildcard support (`*`, `**`, `?`) and zero external dependencies.
+- Excluded file count metrics in terminal and JSON outputs.
 
 ## [0.4.0] - 2026-08-27
 
 ### Added
-- Bandera `--json` para exportar el resultado del análisis y métricas en formato JSON estructurado.
-- Supresión de colores ANSI y decoraciones cuando se activa el modo JSON.
+- `--json` flag to export analysis results and metrics in structured JSON format.
+- ANSI color and terminal decoration suppression when JSON mode is active.
 
 ## [0.3.0] - 2026-08-27
 
 ### Added
-- Detección del operador non-null assertion (`!`) para prevenir fallos en runtime por valores `null` o `undefined`.
-- Detección de casteo forzado directo (`expr as any`).
-- Nuevas pruebas unitarias para validar las reglas añadidas.
+- Non-null assertion operator (`!`) detection to prevent runtime errors caused by `null` or `undefined` values.
+- Direct forced type assertion detection (`expr as any`).
+- Unit tests covering newly introduced AST inspection rules.
 
 ## [0.2.0] - 2026-08-27
 
 ### Added
-- Integración nativa con GitHub Actions Annotations (`::error::` y `::warning::`) para resaltar incidencias directamente en Pull Requests.
-- Soporte para detección de variables de entorno CI.
+- Native integration with GitHub Actions Annotations (`::error::` and `::warning::`) to highlight issues directly on Pull Requests.
+- CI environment variable detection.
 
 ---
 
 ## [0.1.0] - 2026-08-27
 
 ### Added
-- Motor de análisis estático basado en la AST Compiler API de TypeScript.
-- Detección de uso explícito de `any`.
-- Detección de doble casteo (`as any as T` y `as unknown as T`).
-- Detección de directivas de supresión en comentarios trivia (`@ts-ignore`, `@ts-expect-error`, `@ts-nocheck`).
-- Cálculo de métrica ponderada **Type-Health Score** basada en líneas de código (LOC).
-- Interfaz de línea de comandos (CLI) con formateo de colores ANSI y alineación dinámica.
-- Soporte para banderas de terminal como `--threshold=N`.
-- Suite de pruebas unitarias nativas con `node:test`.
-- Pipeline de integración continua automatizado con GitHub Actions.
+- Static analysis engine built on TypeScript's AST Compiler API.
+- Explicit `any` usage detection.
+- Forced double casting detection (`as any as T` and `as unknown as T`).
+- Trivia comment suppression directive detection (`@ts-ignore`, `@ts-expect-error`, `@ts-nocheck`).
+- Weighted **Type-Health Score** metric calculation normalized against Lines of Code (LOC).
+- Command Line Interface (CLI) with ANSI color formatting and dynamic alignment.
+- CLI flag support including `--threshold=N`.
+- Native unit test suite powered by `node:test`.
+- Automated Continuous Integration (CI) pipeline with GitHub Actions.

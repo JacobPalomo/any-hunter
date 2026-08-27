@@ -150,6 +150,34 @@ jobs:
         with:
           threshold: 90
           exclude: '**/*.test.ts'
+```
+
+---
+
+## 🪝 Integración Local (Git Hooks con Husky)
+
+Para evitar que tu equipo haga commits de código que reduzca la salud de tipos por debajo del umbral permitido, puedes integrar Any-Hunter con [Husky](https://typicode.github.io/husky/).
+
+Como Any-Hunter calcula un **Type-Health Score global**, es ideal ejecutarlo sobre todo el proyecto justo antes de hacer un commit o un push.
+
+**1. Instalar e inicializar Husky:**
+```bash
+npm install -D husky
+npx husky init
+```
+
+**2. Configurar el hook de pre-commit:**
+Abre el archivo `.husky/pre-commit` generado y añade Any-Hunter:
+
+```bash
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Ejecutando Any-Hunter..."
+npx any-hunter
+```
+
+¡Listo! Ahora, si alguien intenta hacer un `git commit` y su código contiene demasiados `any` (bajando el puntaje por debajo de tu `threshold`), **el commit será bloqueado automáticamente** hasta que corrijan los tipos.
 
 ---
 

@@ -36,11 +36,29 @@ any-hunter
 
 ---
 
+## ⚙️ Archivo de Configuración (`.anyhunterrc.json`)
+
+Puedes crear un archivo `.anyhunterrc.json` en la raíz de tu proyecto para evitar pasar flags en cada ejecución:
+
+```json
+{
+  "threshold": 85,
+  "exclude": [
+    "**/*.test.ts",
+    "src/legacy/**"
+  ],
+  "tsconfig": "./tsconfig.json"
+}
+```
+
+---
+
 ## ⚙️ Opciones de CLI
 
 | Opción | Descripción | Valor por defecto |
 | :--- | :--- | :--- |
 | `[ruta]` | Ruta al archivo `tsconfig.json` del proyecto | `./tsconfig.json` |
+| `--config=ruta` | Ruta personalizada a un archivo de configuración | `.anyhunterrc.json`
 | `--threshold=N` | Puntuación mínima requerida (0-100) para aprobar en CI/CD | `80` |
 | `--exclude="patrón"` | Patrones glob separados por coma para ignorar archivos | - |
 | `--json` | Emite el reporte en formato JSON crudo por `stdout` | `false` |

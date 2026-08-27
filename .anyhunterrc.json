@@ -1,0 +1,4 @@
+{
+  "threshold": 90,
+  "exclude": ["src/**/*.test.ts"]
+}

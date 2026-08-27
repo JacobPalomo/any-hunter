@@ -3,27 +3,52 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { analyzeProject } from './project.js';
+import { loadConfigFile, type LoadedConfig } from './config.js';
 import { c } from './colors.js';
 
 // 1. Separar argumentos y banderas
 const args = process.argv.slice(2);
 const isJson = args.includes('--json');
 
+const configFlag = args.find((arg) => arg.startsWith('--config='));
+const customConfigPath = configFlag ? configFlag.split('=')[1]?.replace(/^["']|["']$/g, '') : undefined;
+
+let fileConfig: LoadedConfig = { config: {}, configFilePath: null };
+try {
+  fileConfig = loadConfigFile(customConfigPath);
+} catch (err) {
+  if (err instanceof Error) {
+    if (isJson) {
+      console.error(JSON.stringify({ error: err.message }));
+    } else {
+      console.error(`${c.red}[Error] ${err.message}${c.reset}`);
+    }
+  }
+
+  console.error(`${c.red}[Error] Error desconocido${c.reset}`)
+  process.exit(1);
+}
+
 const configArg = args.find((arg) => !arg.startsWith('--'));
-const configPath = configArg ?? './tsconfig.json';
+const configPath = configArg ?? fileConfig.config.tsconfig ?? './tsconfig.json';
 
 const thresholdArg = args.find((arg) => arg.startsWith('--threshold='));
-const THRESHOLD = thresholdArg ? Number(thresholdArg.split('=')[1]) : 80;
+const THRESHOLD = thresholdArg
+  ? Number(thresholdArg.split('=')[1])
+  : (fileConfig.config.threshold ?? 80);
 
-// Extraer patrones de exclusión
+// Extraer patrones de exclusión de CLI y combinarlos con los del archivo
 const excludeArgs = args.filter((arg) => arg.startsWith('--exclude='));
-const excludePatterns = excludeArgs.flatMap((arg) =>
+const cliExcludePatterns = excludeArgs.flatMap((arg) =>
   arg
     .slice('--exclude='.length)
     .replace(/^["']|["']$/g, '')
     .split(',')
     .map((p) => p.trim())
     .filter(Boolean)
+);
+const excludePatterns = Array.from(
+  new Set([...(fileConfig.config.exclude ?? []), ...cliExcludePatterns])
 );
 
 const isGitHubActions = process.env.GITHUB_ACTIONS === 'true';
@@ -48,7 +73,7 @@ const warningsCount = projectIssues.filter((i) => i.severity === 'warning').leng
 const errorsCount = projectIssues.filter((i) => i.severity === 'error').length;
 const passed = projectScore >= THRESHOLD;
 
-// 3. Escribir GitHub Step Summary si está disponible en el entorno
+// 3. Escribir GitHub Step Summary
 if (summaryFile) {
   const issuesTable =
     projectIssues.length > 0
@@ -95,6 +120,7 @@ if (isJson) {
     totalAnalyzedLOC,
     excludedFilesCount,
     excludedPatterns: excludePatterns,
+    configFile: fileConfig.configFilePath,
     summary: {
       errors: errorsCount,
       warnings: warningsCount,
@@ -139,6 +165,9 @@ const printRow = (icon: string, label: string, value: string) => {
 
 console.log(`${c.dim}──────────────────────────────────────────────────${c.reset}`);
 printRow('📁', 'Archivo de config:', `${c.bold}${configPath}${c.reset}`);
+if (fileConfig.configFilePath) {
+  printRow('⚙️',  'Ajustes Any-Hunter:', `${c.dim}${fileConfig.configFilePath}${c.reset}`);
+}
 printRow('📊', 'Líneas de código (LOC):', `${c.bold}${totalAnalyzedLOC}${c.reset}`);
 if (excludedFilesCount > 0) {
   printRow('🚫', 'Archivos excluidos:', `${c.dim}${excludedFilesCount}${c.reset}`);

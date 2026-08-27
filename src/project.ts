@@ -84,10 +84,18 @@ export function analyzeProject(
   // Cálculo de penalizaciones
   let totalPenalty = 0;
   for (const issue of projectIssues) {
-    if (issue.severity === 'error') {
-      totalPenalty += 5;
-    } else if (issue.severity === 'warning') {
-      totalPenalty += 2;
+    switch (issue.severity) {
+      case 'error':
+        totalPenalty += 5;
+        break
+
+      case 'warning':
+        totalPenalty += 2;
+        break
+
+      default:
+        const exhaustiveCheck: never = issue.severity
+        throw new Error(`Severidad no reconocida: ${exhaustiveCheck}`);
     }
   }
 

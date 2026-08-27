@@ -2,6 +2,8 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { analyzeCode } from './analyzer.js';
 import { isExcluded } from './project.js';
+import fs from 'node:fs';
+import { loadConfigFile } from './config.js';
 
 describe('any-hunter AST Analyzer', () => {
   test('debe detectar el uso explícito de any', () => {
@@ -78,5 +80,31 @@ describe('isExcluded pattern matcher', () => {
     assert.equal(isExcluded('/app/src/mocks/user.ts', patterns), true);
     assert.equal(isExcluded('/app/dist/bundle.js', patterns), true);
     assert.equal(isExcluded('/app/src/index.ts', patterns), false);
+  });
+});
+
+describe('loadConfigFile', () => {
+  const tempConfigPath = './temp.anyhunterrc.json';
+
+  test('debe retornar configuración vacía si el archivo no existe', () => {
+    const result = loadConfigFile('inexistente.json');
+    assert.deepEqual(result.config, {});
+    assert.equal(result.configFilePath, null);
+  });
+
+  test('debe parsear correctamente un archivo de configuración válido', () => {
+    fs.writeFileSync(
+      tempConfigPath,
+      JSON.stringify({ threshold: 92, exclude: ['**/*.spec.ts'] })
+    );
+
+    try {
+      const result = loadConfigFile(tempConfigPath);
+      assert.equal(result.config.threshold, 92);
+      assert.deepEqual(result.config.exclude, ['**/*.spec.ts']);
+      assert.equal(result.configFilePath, tempConfigPath);
+    } finally {
+      fs.unlinkSync(tempConfigPath);
+    }
   });
 });

@@ -1,0 +1,54 @@
+{
+  "name": "any-hunter",
+  "version": "0.1.0",
+  "description": "Auditor estático del AST para medir la salud de tipos en proyectos TypeScript",
+  "type": "module",
+  "bin": {
+    "any-hunter": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "typescript",
+    "ast",
+    "linter",
+    "type-safety",
+    "code-analysis",
+    "cli"
+  ],
+  "author": {
+    "name": "Jacob Palomo",
+    "email": "jacob.palomo248@gmail.com",
+    "url": "https://github.com/JacobPalomo"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JacobPalomo/any-hunter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/JacobPalomo/any-hunter/issues"
+  },
+  "homepage": "https://github.com/JacobPalomo/any-hunter#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.3.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.23.12",
+    "typescript": "^5.9.3"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  }
+}

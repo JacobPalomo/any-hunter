@@ -5,10 +5,18 @@ import path from 'node:path';
 import { analyzeProject } from './project.js';
 import { loadConfigFile, type LoadedConfig } from './config.js';
 import { c } from './colors.js';
+import { runInit } from './init.js';
+import { generateSarif } from './sarif.js';
 
 // 1. Separar argumentos y banderas
 const args = process.argv.slice(2);
-const isJson = args.includes('--json');
+
+if (args.includes('--init')) {
+  runInit();
+}
+
+const isJson = args.includes('--json') || args.includes('--format=json');
+const isSarif = args.includes('--sarif') || args.includes('--format=sarif');
 
 const configFlag = args.find((arg) => arg.startsWith('--config='));
 const customConfigPath = configFlag ? configFlag.split('=')[1]?.replace(/^["']|["']$/g, '') : undefined;
@@ -108,7 +116,13 @@ ${issuesTable}
   }
 }
 
-// 4. Salida en formato JSON
+// 4. Salidas estructuradas (JSON / SARIF)
+if (isSarif) {
+  const sarifReport = generateSarif(projectIssues);
+  console.log(JSON.stringify(sarifReport, null, 2));
+  process.exit(passed ? 0 : 1);
+}
+
 if (isJson) {
   const jsonReport = {
     score: projectScore,

@@ -10,7 +10,17 @@ export function analyzeCode(fileName: string, sourceText: string): Issue[] {
     true
   );
 
-  // 1. Escanear comentarios trivia (@ts-ignore, @ts-expect-error, etc.)
+  // 1. Escanear líneas que tengan el comentario de exclusión local
+  const disabledLines = new Set<number>();
+  const lines = sourceText.split(/\r\n|\r|\n/);
+  lines.forEach((lineText, index) => {
+    if (lineText.includes('// any-hunter-disable-next-line')) {
+      // index es 0-based. La línea actual es index+1, la siguiente (la ignorada) es index+2
+      disabledLines.add(index + 2);
+    }
+  });
+
+  // 2. Escanear comentarios trivia (@ts-ignore, @ts-expect-error, etc.)
   const fullText = sourceFile.getFullText();
   const triviaRegex = /\/\/\s*(@ts-(?:ignore|expect-error|nocheck))/g;
   let match: RegExpExecArray | null;
@@ -29,7 +39,7 @@ export function analyzeCode(fileName: string, sourceText: string): Issue[] {
     });
   }
 
-  // 2. Recorrer el AST para analizar nodos de sintaxis
+  // 3. Recorrer el AST para analizar nodos de sintaxis
   function visit(node: ts.Node) {
     // Regla: Non-null assertion operator (ej: item!.value)
     if (ts.isNonNullExpression(node)) {
@@ -96,5 +106,6 @@ export function analyzeCode(fileName: string, sourceText: string): Issue[] {
   }
 
   visit(sourceFile);
-  return issues;
+
+  return issues.filter(issue => !disabledLines.has(issue.line));
 }

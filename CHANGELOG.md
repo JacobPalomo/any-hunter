@@ -5,6 +5,15 @@ Todos los cambios notables en este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/)
 y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.0.0] - 2026-08-27
+
+¡Lanzamiento de la versión estable 1.0.0! Any-Hunter ahora es una herramienta completa para auditoría a nivel empresarial.
+
+### Added
+- **Asistente de Inicialización (`--init`):** Genera automáticamente un archivo base `.anyhunterrc.json`.
+- **Formato SARIF (`--sarif`):** Soporte de exportación de reportes al estándar SARIF, permitiendo su integración con la pestaña *Security / Code Scanning* de GitHub.
+- **Exclusiones por línea (`// any-hunter-disable-next-line`):** Capacidad de saltarse el linter en líneas específicas de código justificado.
+
 ## [0.9.0] - 2026-08-27
 
 ### Added

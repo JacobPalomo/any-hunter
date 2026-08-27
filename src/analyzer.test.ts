@@ -121,3 +121,17 @@ describe('loadConfigFile', () => {
     }
   });
 });
+
+test('debe ignorar advertencias si la línea anterior tiene // any-hunter-disable-next-line', () => {
+  const code = `
+    // any-hunter-disable-next-line
+    let x: any = 1;
+    let y: any = 2;
+  `;
+  const issues = analyzeCode('test.ts', code);
+
+  // Solo debe encontrar el error de 'y' en la línea 4
+  assert.equal(issues.length, 1);
+  assert.equal(issues[0]!.line, 4);
+  assert.match(issues[0]!.message, /uso explícito de any/);
+});

@@ -19,7 +19,7 @@
 
 ---
 
-## 🚀 Uso Rápido
+## 🚀 Instalación y Uso Rápido
 
 Ejecuta directamente sin instalar usando `npx`:
 
@@ -27,11 +27,29 @@ Ejecuta directamente sin instalar usando `npx`:
 npx any-hunter ./tsconfig.json
 ```
 
+Ejecuta el asistente de inicialización para configurar tu proyecto rápidamente:
+```bash
+npx any-hunter --init
+```
+
+Esto creará un archivo .anyhunterrc.json con los valores recomendados.
+
 O instala globalmente:
 
 ```bash
 npm install -g any-hunter
 any-hunter
+```
+
+---
+
+## 🤫 Ignorar líneas específicas
+
+Si tienes un caso donde un tipo any está justificado, puedes omitir la revisión en la línea inmediatamente inferior usando este comentario:
+
+```typescript
+// any-hunter-disable-next-line
+const data = JSON.parse(response) as any;
 ```
 
 ---
@@ -58,6 +76,8 @@ Puedes crear un archivo `.anyhunterrc.json` en la raíz de tu proyecto para evit
 | Opción | Descripción | Valor por defecto |
 | :--- | :--- | :--- |
 | `[ruta]` | Ruta al archivo `tsconfig.json` del proyecto | `./tsconfig.json` |
+| `--init` | Genera un archivo `.anyhunterrc.json` base. | - |
+| `--sarif` | Exporta los resultados en formato SARIF (Ideal para la pestaña Security de GitHub). | - |
 | `--config=ruta` | Ruta personalizada a un archivo de configuración | `.anyhunterrc.json`
 | `--threshold=N` | Puntuación mínima requerida (0-100) para aprobar en CI/CD | `80` |
 | `--exclude="patrón"` | Patrones glob separados por coma para ignorar archivos | - |

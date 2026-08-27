@@ -14,6 +14,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
+    "audit": "node dist/index.js ./tsconfig.json",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build"
   },

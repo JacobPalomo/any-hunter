@@ -1,0 +1,30 @@
+name: CI & Type Health Audit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: 📦 Instalar dependencias
+        run: npm ci
+
+      - name: 🛠️ Compilar proyecto
+        run: npm run build
+
+      - name: 🎯 Auto-auditoría con any-hunter
+        run: node dist/index.js ./tsconfig.json --threshold=85

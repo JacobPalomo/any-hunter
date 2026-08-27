@@ -42,6 +42,7 @@ any-hunter
 | :--- | :--- | :--- |
 | `[ruta]` | Ruta al archivo `tsconfig.json` del proyecto | `./tsconfig.json` |
 | `--threshold=N` | Puntuación mínima requerida (0-100) para aprobar en CI/CD | `80` |
+| `--exclude="patrón"` | Patrones glob separados por coma para ignorar archivos | - |
 | `--json` | Emite el reporte en formato JSON crudo por `stdout` | `false` |
 
 ### Ejemplos:

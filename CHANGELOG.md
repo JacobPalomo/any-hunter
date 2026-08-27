@@ -5,6 +5,13 @@ Todos los cambios notables en este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/)
 y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [0.5.0] - 2026-08-27
+
+### Added
+- Bandera `--exclude` para ignorar archivos y carpetas mediante patrones glob (ej: `--exclude="*.test.ts,src/legacy/**"`).
+- Nueva función auxiliar `isExcluded` con soporte para comodines (`*`, `**`, `?`) sin dependencias externas.
+- Métrica de conteo de archivos excluidos en reportes de terminal y JSON.
+
 ## [0.4.0] - 2026-08-27
 
 ### Added

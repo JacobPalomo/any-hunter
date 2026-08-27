@@ -1,69 +1,103 @@
 import ts from 'typescript';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { Issue, ProjectAnalysis } from './types.js';
 import { analyzeCode } from './analyzer.js';
+import type { Issue } from './types.js';
 
-export function getProjectFiles(configPath: string): string[] {
+export interface ProjectAnalysisResult {
+  projectIssues: Issue[];
+  projectScore: number;
+  totalAnalyzedLOC: number;
+  excludedFilesCount: number;
+}
+
+/**
+ * Valida si una ruta coincide con algún patrón glob (ej: ** / *.test.ts, src/legacy/**)
+ */
+export function isExcluded(filePath: string, excludePatterns: string[]): boolean {
+  if (excludePatterns.length === 0) return false;
+  const normalizedPath = filePath.replace(/\\/g, '/');
+
+  return excludePatterns.some((pattern) => {
+    const cleanPattern = pattern.trim().replace(/\\/g, '/');
+    if (!cleanPattern) return false;
+
+    // Convertir glob a RegExp nativa
+    const regexStr = cleanPattern
+      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+      .replace(/\*\*/g, '___GLOBSTAR___')
+      .replace(/\*/g, '[^/]*')
+      .replace(/___GLOBSTAR___/g, '.*')
+      .replace(/\?/g, '.');
+
+    const regex = new RegExp(`(^|/)${regexStr}$|^${regexStr}$`);
+    return regex.test(normalizedPath);
+  });
+}
+
+export function analyzeProject(
+  configPath: string,
+  excludePatterns: string[] = []
+): ProjectAnalysisResult {
   const configFile = ts.readConfigFile(configPath, ts.sys.readFile);
 
   if (configFile.error) {
-    console.error(`[Error] No se pudo leer ${configPath}`);
-    process.exit(1);
+    throw new Error(
+      `Error al leer ${configPath}: ${ts.flattenDiagnosticMessageText(configFile.error.messageText, '\n')}`
+    );
   }
 
   const basePath = path.dirname(path.resolve(configPath));
-
   const parsedCommandLine = ts.parseJsonConfigFileContent(
     configFile.config,
     ts.sys,
     basePath
   );
 
-  return parsedCommandLine.fileNames;
-}
-
-export function analyzeProject(configPath: string): ProjectAnalysis {
-  const files = getProjectFiles(configPath);
-  const allIssues: Issue[] = [];
-  let totalAnalyzedLOC = 0;
-  let totalLostScore = 0;
-
-  for (const filePath of files) {
-    if (!fs.existsSync(filePath)) {
-      continue;
+  if (parsedCommandLine.errors.length > 0) {
+    const firstError = parsedCommandLine.errors[0];
+    if (firstError) {
+      throw new Error(
+        `Error en la configuración de TypeScript: ${ts.flattenDiagnosticMessageText(firstError.messageText, '\n')}`
+      );
     }
-
-    const fileContent = fs.readFileSync(filePath, 'utf-8');
-    totalAnalyzedLOC += fileContent.split('\n').length;
-    const issues = analyzeCode(filePath, fileContent);
-
-    issues.forEach((issue) => {
-      switch (issue.severity) {
-        case 'warning':
-          totalLostScore += 2;
-          break;
-        case 'error':
-          totalLostScore += 5;
-          break;
-        default: {
-          const exhaustiveCheck: never = issue.severity;
-          throw new Error(`Severidad no reconocida: ${exhaustiveCheck}`);
-        }
-      }
-    });
-
-    allIssues.push(...issues);
   }
 
-  const calculatedScore =
-    totalAnalyzedLOC === 0
-      ? 100
-      : Math.max(0, 100 - (totalLostScore / totalAnalyzedLOC) * 100);
+  const allFiles = parsedCommandLine.fileNames;
+  const targetFiles = allFiles.filter((file) => !isExcluded(file, excludePatterns));
+  const excludedFilesCount = allFiles.length - targetFiles.length;
+
+  let totalAnalyzedLOC = 0;
+  const projectIssues: Issue[] = [];
+
+  for (const fileName of targetFiles) {
+    if (fs.existsSync(fileName)) {
+      const content = fs.readFileSync(fileName, 'utf-8');
+      const lines = content.split(/\r\n|\r|\n/).length;
+      totalAnalyzedLOC += lines;
+
+      const fileIssues = analyzeCode(fileName, content);
+      projectIssues.push(...fileIssues);
+    }
+  }
+
+  // Cálculo de penalizaciones
+  let totalPenalty = 0;
+  for (const issue of projectIssues) {
+    if (issue.severity === 'error') {
+      totalPenalty += 5;
+    } else if (issue.severity === 'warning') {
+      totalPenalty += 2;
+    }
+  }
+
+  const penaltyFactor = totalAnalyzedLOC > 0 ? (totalPenalty / totalAnalyzedLOC) * 100 : 0;
+  const projectScore = Math.max(0, Math.round(100 - penaltyFactor));
 
   return {
-    projectIssues: allIssues,
-    projectScore: Math.round(calculatedScore),
+    projectIssues,
+    projectScore,
     totalAnalyzedLOC,
+    excludedFilesCount,
   };
 }

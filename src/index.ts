@@ -15,6 +15,17 @@ const configPath = configArg ?? './tsconfig.json';
 const thresholdArg = args.find((arg) => arg.startsWith('--threshold='));
 const THRESHOLD = thresholdArg ? Number(thresholdArg.split('=')[1]) : 80;
 
+// Extraer patrones de exclusión (soporta --exclude="*.test.ts,src/legacy/**")
+const excludeArgs = args.filter((arg) => arg.startsWith('--exclude='));
+const excludePatterns = excludeArgs.flatMap((arg) =>
+  arg
+    .slice('--exclude='.length)
+    .replace(/^["']|["']$/g, '')
+    .split(',')
+    .map((p) => p.trim())
+    .filter(Boolean)
+);
+
 const isGitHubActions = process.env.GITHUB_ACTIONS === 'true';
 
 if (!fs.existsSync(configPath)) {
@@ -26,8 +37,11 @@ if (!fs.existsSync(configPath)) {
   process.exit(1);
 }
 
-// 2. Ejecutar análisis
-const { projectIssues, projectScore, totalAnalyzedLOC } = analyzeProject(configPath);
+// 2. Ejecutar análisis con exclusiones
+const { projectIssues, projectScore, totalAnalyzedLOC, excludedFilesCount } = analyzeProject(
+  configPath,
+  excludePatterns
+);
 
 const warningsCount = projectIssues.filter((i) => i.severity === 'warning').length;
 const errorsCount = projectIssues.filter((i) => i.severity === 'error').length;
@@ -40,6 +54,8 @@ if (isJson) {
     threshold: THRESHOLD,
     passed,
     totalAnalyzedLOC,
+    excludedFilesCount,
+    excludedPatterns: excludePatterns,
     summary: {
       errors: errorsCount,
       warnings: warningsCount,
@@ -52,7 +68,7 @@ if (isJson) {
   process.exit(passed ? 0 : 1);
 }
 
-// 4. Salida estándar de terminal (CLI visual)
+// 4. Salida CLI visual
 console.log(`\n${c.bold}${c.cyan}🔍 Any-Hunter — Auditoría de Tipos${c.reset}\n`);
 
 if (projectIssues.length === 0) {
@@ -85,6 +101,9 @@ const printRow = (icon: string, label: string, value: string) => {
 console.log(`${c.dim}──────────────────────────────────────────────────${c.reset}`);
 printRow('📁', 'Archivo de config:', `${c.bold}${configPath}${c.reset}`);
 printRow('📊', 'Líneas de código (LOC):', `${c.bold}${totalAnalyzedLOC}${c.reset}`);
+if (excludedFilesCount > 0) {
+  printRow('🚫', 'Archivos excluidos:', `${c.dim}${excludedFilesCount}${c.reset}`);
+}
 printRow('🟡', 'Advertencias:', `${c.yellow}${warningsCount}${c.reset}`);
 printRow('❌', 'Errores críticos:', `${c.red}${errorsCount}${c.reset}`);
 

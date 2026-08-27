@@ -1,6 +1,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { analyzeCode } from './analyzer.js';
+import { isExcluded } from './project.js';
 
 describe('any-hunter AST Analyzer', () => {
   test('debe detectar el uso explícito de any', () => {
@@ -58,5 +59,24 @@ describe('any-hunter AST Analyzer', () => {
     const issues = analyzeCode('test.ts', code);
 
     assert.equal(issues.length, 0);
+  });
+});
+
+describe('isExcluded pattern matcher', () => {
+  test('debe ignorar archivos que coincidan con comodín de extensión (*.test.ts)', () => {
+    assert.equal(isExcluded('/src/components/Button.test.ts', ['*.test.ts']), true);
+    assert.equal(isExcluded('/src/components/Button.ts', ['*.test.ts']), false);
+  });
+
+  test('debe ignorar carpetas recursivas (** / legacy / **)', () => {
+    assert.equal(isExcluded('/project/src/legacy/oldModule.ts', ['**/legacy/**']), true);
+    assert.equal(isExcluded('/project/src/core/newModule.ts', ['**/legacy/**']), false);
+  });
+
+  test('debe ignorar múltiples patrones combinados', () => {
+    const patterns = ['*.spec.ts', 'dist/**', '**/mocks/**'];
+    assert.equal(isExcluded('/app/src/mocks/user.ts', patterns), true);
+    assert.equal(isExcluded('/app/dist/bundle.js', patterns), true);
+    assert.equal(isExcluded('/app/src/index.ts', patterns), false);
   });
 });

@@ -44,9 +44,9 @@ const printRow = (icon: string, label: string, value: string) => {
 };
 
 console.log(`${c.dim}──────────────────────────────────────────────────${c.reset}`);
-printRow('📂', 'Archivo de config:', `${c.bold}${configPath}${c.reset}`);
+printRow('📁', 'Archivo de config:', `${c.bold}${configPath}${c.reset}`);
 printRow('📊', 'Líneas de código (LOC):', `${c.bold}${totalAnalyzedLOC}${c.reset}`);
-printRow('⚠️ ', 'Advertencias:', `${c.yellow}${warningsCount}${c.reset}`);
+printRow('🟡', 'Advertencias:', `${c.yellow}${warningsCount}${c.reset}`);
 printRow('❌', 'Errores críticos:', `${c.red}${errorsCount}${c.reset}`);
 
 const scoreColor = projectScore >= THRESHOLD ? c.green : c.red;

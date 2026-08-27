@@ -1,5 +1,7 @@
 # 🎯 any-hunter
 
+[![CI & Type Health Audit](https://github.com/JacobPalomo/any-hunter/actions/workflows/ci.yml/badge.svg)](https://github.com/JacobPalomo/any-hunter/actions/workflows/ci.yml)
+
 > Analizador estático ultraligero con cero dependencias en tiempo de ejecución para auditar la salud de tipos en proyectos de TypeScript.
 
 `any-hunter` recorre el Árbol de Sintaxis Abstracta (AST) de TypeScript para detectar trampas de tipos comunes, calcular una puntuación de salud (**Type-Health Score**) y bloquear pipelines de CI/CD cuando el código no cumple con el estándar de calidad.

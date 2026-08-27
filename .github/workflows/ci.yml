@@ -23,6 +23,9 @@ jobs:
       - name: 📦 Instalar dependencias
         run: npm ci
 
+      - name: 🧪 Ejecutar pruebas unitarias
+        run: npm test
+
       - name: 🛠️ Compilar proyecto
         run: npm run build
 

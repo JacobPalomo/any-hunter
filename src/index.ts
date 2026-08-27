@@ -5,7 +5,10 @@ import path from 'node:path';
 import { analyzeProject } from './project.js';
 import { c } from './colors.js';
 
+// 1. Separar argumentos y banderas
 const args = process.argv.slice(2);
+const isJson = args.includes('--json');
+
 const configArg = args.find((arg) => !arg.startsWith('--'));
 const configPath = configArg ?? './tsconfig.json';
 
@@ -15,15 +18,41 @@ const THRESHOLD = thresholdArg ? Number(thresholdArg.split('=')[1]) : 80;
 const isGitHubActions = process.env.GITHUB_ACTIONS === 'true';
 
 if (!fs.existsSync(configPath)) {
-  console.error(`${c.red}[Error] No se encontró la configuración en: ${configPath}${c.reset}`);
+  if (isJson) {
+    console.error(JSON.stringify({ error: `No se encontró la configuración en: ${configPath}` }));
+  } else {
+    console.error(`${c.red}[Error] No se encontró la configuración en: ${configPath}${c.reset}`);
+  }
   process.exit(1);
 }
 
+// 2. Ejecutar análisis
 const { projectIssues, projectScore, totalAnalyzedLOC } = analyzeProject(configPath);
 
 const warningsCount = projectIssues.filter((i) => i.severity === 'warning').length;
 const errorsCount = projectIssues.filter((i) => i.severity === 'error').length;
+const passed = projectScore >= THRESHOLD;
 
+// 3. Salida en formato JSON
+if (isJson) {
+  const jsonReport = {
+    score: projectScore,
+    threshold: THRESHOLD,
+    passed,
+    totalAnalyzedLOC,
+    summary: {
+      errors: errorsCount,
+      warnings: warningsCount,
+      total: projectIssues.length,
+    },
+    issues: projectIssues,
+  };
+
+  console.log(JSON.stringify(jsonReport, null, 2));
+  process.exit(passed ? 0 : 1);
+}
+
+// 4. Salida estándar de terminal (CLI visual)
 console.log(`\n${c.bold}${c.cyan}🔍 Any-Hunter — Auditoría de Tipos${c.reset}\n`);
 
 if (projectIssues.length === 0) {
@@ -48,6 +77,7 @@ if (projectIssues.length === 0) {
   console.log();
 }
 
+// 5. Imprimir métricas finales
 const printRow = (icon: string, label: string, value: string) => {
   console.log(`${icon}  ${label.padEnd(24)} ${value}`);
 };
@@ -58,7 +88,7 @@ printRow('📊', 'Líneas de código (LOC):', `${c.bold}${totalAnalyzedLOC}${c.r
 printRow('🟡', 'Advertencias:', `${c.yellow}${warningsCount}${c.reset}`);
 printRow('❌', 'Errores críticos:', `${c.red}${errorsCount}${c.reset}`);
 
-const scoreColor = projectScore >= THRESHOLD ? c.green : c.red;
+const scoreColor = passed ? c.green : c.red;
 printRow(
   '🎯',
   'Type-Health Score:',
@@ -66,7 +96,8 @@ printRow(
 );
 console.log(`${c.dim}──────────────────────────────────────────────────${c.reset}\n`);
 
-if (projectScore < THRESHOLD) {
+// 6. Decisión de salida
+if (!passed) {
   console.log(`${c.red}${c.bold}❌ FALLO:${c.reset} La calidad de tipos está por debajo del umbral.\n`);
   process.exit(1);
 } else {

@@ -42,9 +42,8 @@ export function analyzeProject(
   const configFile = ts.readConfigFile(configPath, ts.sys.readFile);
 
   if (configFile.error) {
-    throw new Error(
-      `Error al leer ${configPath}: ${ts.flattenDiagnosticMessageText(configFile.error.messageText, '\n')}`
-    );
+    const message = ts.flattenDiagnosticMessageText(configFile.error.messageText, '\n');
+    throw new Error(`Error al leer ${configPath}: ${message}`);
   }
 
   const basePath = path.dirname(path.resolve(configPath));
@@ -56,11 +55,10 @@ export function analyzeProject(
 
   if (parsedCommandLine.errors.length > 0) {
     const firstError = parsedCommandLine.errors[0];
-    if (firstError) {
-      throw new Error(
-        `Error en la configuración de TypeScript: ${ts.flattenDiagnosticMessageText(firstError.messageText, '\n')}`
-      );
-    }
+    const message = firstError
+      ? ts.flattenDiagnosticMessageText(firstError.messageText, '\n')
+      : 'Error desconocido en tsconfig';
+    throw new Error(`Error en la configuración de TypeScript: ${message}`);
   }
 
   const allFiles = parsedCommandLine.fileNames;

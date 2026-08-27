@@ -17,15 +17,12 @@ let fileConfig: LoadedConfig = { config: {}, configFilePath: null };
 try {
   fileConfig = loadConfigFile(customConfigPath);
 } catch (err) {
-  if (err instanceof Error) {
-    if (isJson) {
-      console.error(JSON.stringify({ error: err.message }));
-    } else {
-      console.error(`${c.red}[Error] ${err.message}${c.reset}`);
-    }
+  const message = err instanceof Error ? err.message : 'Error desconocido';
+  if (isJson) {
+    console.error(JSON.stringify({ error: message }));
+  } else {
+    console.error(`${c.red}[Error] ${message}${c.reset}`);
   }
-
-  console.error(`${c.red}[Error] Error desconocido${c.reset}`)
   process.exit(1);
 }
 

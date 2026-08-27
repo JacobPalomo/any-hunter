@@ -79,8 +79,8 @@ export function analyzeCode(fileName: string, sourceText: string): Issue[] {
     // Regla: Declaración explícita de any (ej: let x: any)
     if (
       node.kind === ts.SyntaxKind.AnyKeyword &&
-      node.parent.kind !== ts.SyntaxKind.AsExpression &&
-      node.parent.kind !== ts.SyntaxKind.TypeAssertionExpression
+      node.parent?.kind !== ts.SyntaxKind.AsExpression &&
+      node.parent?.kind !== ts.SyntaxKind.TypeAssertionExpression
     ) {
       const { line, character } = sourceFile.getLineAndCharacterOfPosition(node.getStart());
       issues.push({

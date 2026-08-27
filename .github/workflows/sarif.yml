@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    - cron: '0 0 * * 1' # Ejecución semanal automática (lunes a medianoche)
+    - cron: '0 0 * * 1'
 
 jobs:
   sarif-audit:
@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      security-events: write # Requerido para subir resultados a la pestaña Security
+      security-events: write
 
     steps:
       - name: Checkout del repositorio
@@ -23,7 +23,7 @@ jobs:
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Instalar dependencias
         run: npm ci
@@ -33,10 +33,10 @@ jobs:
 
       - name: Ejecutar Any-Hunter con exportación SARIF
         run: node dist/index.js ./tsconfig.json --sarif > results.sarif
-        continue-on-error: true # Permite subir el reporte incluso si hay incidencias
+        continue-on-error: true
 
       - name: Subir reporte SARIF a GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: results.sarif
           category: any-hunter

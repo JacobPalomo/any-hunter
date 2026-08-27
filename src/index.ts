@@ -15,7 +15,7 @@ const configPath = configArg ?? './tsconfig.json';
 const thresholdArg = args.find((arg) => arg.startsWith('--threshold='));
 const THRESHOLD = thresholdArg ? Number(thresholdArg.split('=')[1]) : 80;
 
-// Extraer patrones de exclusión (soporta --exclude="*.test.ts,src/legacy/**")
+// Extraer patrones de exclusión
 const excludeArgs = args.filter((arg) => arg.startsWith('--exclude='));
 const excludePatterns = excludeArgs.flatMap((arg) =>
   arg
@@ -27,6 +27,7 @@ const excludePatterns = excludeArgs.flatMap((arg) =>
 );
 
 const isGitHubActions = process.env.GITHUB_ACTIONS === 'true';
+const summaryFile = process.env.GITHUB_STEP_SUMMARY;
 
 if (!fs.existsSync(configPath)) {
   if (isJson) {
@@ -37,7 +38,7 @@ if (!fs.existsSync(configPath)) {
   process.exit(1);
 }
 
-// 2. Ejecutar análisis con exclusiones
+// 2. Ejecutar análisis
 const { projectIssues, projectScore, totalAnalyzedLOC, excludedFilesCount } = analyzeProject(
   configPath,
   excludePatterns
@@ -47,7 +48,45 @@ const warningsCount = projectIssues.filter((i) => i.severity === 'warning').leng
 const errorsCount = projectIssues.filter((i) => i.severity === 'error').length;
 const passed = projectScore >= THRESHOLD;
 
-// 3. Salida en formato JSON
+// 3. Escribir GitHub Step Summary si está disponible en el entorno
+if (summaryFile) {
+  const issuesTable =
+    projectIssues.length > 0
+      ? `### 📋 Incidencias Detectadas
+
+| Severidad | Ubicación | Mensaje |
+| :--- | :--- | :--- |
+${projectIssues
+  .map((i) => {
+    const icon = i.severity === 'error' ? '❌ Error' : '🟡 Warn';
+    const loc = `\`${path.relative(process.cwd(), i.file)}:${i.line}:${i.character}\``;
+    return `| ${icon} | ${loc} | ${i.message} |`;
+  })
+  .join('\n')}`
+      : '✨ **¡Código impecable! No se encontraron trampas de tipos.**';
+
+  const summaryMarkdown = `## 🎯 Any-Hunter — Auditoría de Salud de Tipos
+
+| Métrica | Valor |
+| :--- | :--- |
+| **Resultado** | ${passed ? '✅ **Aprobado**' : '❌ **Reprobado**'} |
+| **Type-Health Score** | **${projectScore}/100** (Mínimo: ${THRESHOLD}) |
+| **Líneas analizadas (LOC)** | ${totalAnalyzedLOC} |
+| **Advertencias** | ${warningsCount} |
+| **Errores críticos** | ${errorsCount} |
+${excludedFilesCount > 0 ? `| **Archivos excluidos** | ${excludedFilesCount} |\n` : ''}
+
+${issuesTable}
+`;
+
+  try {
+    fs.appendFileSync(summaryFile, summaryMarkdown, 'utf-8');
+  } catch (err) {
+    console.error('Error al escribir en GITHUB_STEP_SUMMARY:', err);
+  }
+}
+
+// 4. Salida en formato JSON
 if (isJson) {
   const jsonReport = {
     score: projectScore,
@@ -68,7 +107,7 @@ if (isJson) {
   process.exit(passed ? 0 : 1);
 }
 
-// 4. Salida CLI visual
+// 5. Salida CLI visual
 console.log(`\n${c.bold}${c.cyan}🔍 Any-Hunter — Auditoría de Tipos${c.reset}\n`);
 
 if (projectIssues.length === 0) {
@@ -93,7 +132,7 @@ if (projectIssues.length === 0) {
   console.log();
 }
 
-// 5. Imprimir métricas finales
+// 6. Imprimir métricas finales
 const printRow = (icon: string, label: string, value: string) => {
   console.log(`${icon}  ${label.padEnd(24)} ${value}`);
 };
@@ -115,7 +154,7 @@ printRow(
 );
 console.log(`${c.dim}──────────────────────────────────────────────────${c.reset}\n`);
 
-// 6. Decisión de salida
+// 7. Decisión de salida
 if (!passed) {
   console.log(`${c.red}${c.bold}❌ FALLO:${c.reset} La calidad de tipos está por debajo del umbral.\n`);
   process.exit(1);

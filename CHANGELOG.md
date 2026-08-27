@@ -5,6 +5,11 @@ Todos los cambios notables en este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/)
 y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [0.6.0] - 2026-08-27
+
+### Added
+- Soporte para GitHub Actions Step Summary (`$GITHUB_STEP_SUMMARY`), renderizando un reporte visual en Markdown con tablas de métricas y desglose de incidencias en el resumen del workflow.
+
 ## [0.5.0] - 2026-08-27
 
 ### Added

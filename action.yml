@@ -1,0 +1,38 @@
+name: 'Any-Hunter'
+description: 'Auditoría de salud de tipos de TypeScript. Detecta el uso de any, non-null assertions y casteos inseguros.'
+author: 'Jacob Palomo'
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  tsconfig:
+    description: 'Ruta al archivo tsconfig.json'
+    default: './tsconfig.json'
+    required: false
+  threshold:
+    description: 'Puntuación mínima requerida (0-100)'
+    required: false
+  exclude:
+    description: 'Patrones glob separados por coma para excluir archivos'
+    required: false
+  config:
+    description: 'Ruta al archivo .anyhunterrc.json'
+    required: false
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Instalar dependencias del motor Any-Hunter
+      shell: bash
+      run: npm ci --prefix ${{ github.action_path }}
+
+    - name: Ejecutar auditoría Any-Hunter
+      shell: bash
+      run: |
+        ARGS="${{ inputs.tsconfig }}"
+        if [ -n "${{ inputs.threshold }}" ]; then ARGS="$ARGS --threshold=${{ inputs.threshold }}"; fi
+        if [ -n "${{ inputs.exclude }}" ]; then ARGS="$ARGS --exclude=\"${{ inputs.exclude }}\""; fi
+        if [ -n "${{ inputs.config }}" ]; then ARGS="$ARGS --config=${{ inputs.config }}"; fi
+
+        node ${{ github.action_path }}/dist/index.js $ARGS

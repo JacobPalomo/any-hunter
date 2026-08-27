@@ -1,6 +1,6 @@
 {
   "name": "any-hunter",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Auditor estático del AST para medir la salud de tipos en proyectos TypeScript",
   "type": "module",
   "bin": {

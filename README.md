@@ -102,6 +102,26 @@ console.log(snippetIssues);
 
 ---
 
+## 🤖 Integración con GitHub Actions
+
+Puedes integrar Any-Hunter directamente en tus pipelines sin necesidad de instalarlo usando mi Action oficial:
+
+```yaml
+jobs:
+  audit-types:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+      
+      - name: Validar tipos con Any-Hunter
+        uses: JacobPalomo/any-hunter@v0.9.0
+        with:
+          threshold: 90
+          exclude: '**/*.test.ts'
+
+---
+
 ## 📄 Licencia
 
 MIT

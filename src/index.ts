@@ -1,16 +1,18 @@
 #!/usr/bin/env node
 
 import fs from 'node:fs';
+import path from 'node:path';
 import { analyzeProject } from './project.js';
-import { c } from './colors.js'
+import { c } from './colors.js';
 
 const args = process.argv.slice(2);
-
 const configArg = args.find((arg) => !arg.startsWith('--'));
 const configPath = configArg ?? './tsconfig.json';
 
 const thresholdArg = args.find((arg) => arg.startsWith('--threshold='));
 const THRESHOLD = thresholdArg ? Number(thresholdArg.split('=')[1]) : 80;
+
+const isGitHubActions = process.env.GITHUB_ACTIONS === 'true';
 
 if (!fs.existsSync(configPath)) {
   console.error(`${c.red}[Error] No se encontró la configuración en: ${configPath}${c.reset}`);
@@ -31,10 +33,17 @@ if (projectIssues.length === 0) {
     const isError = issue.severity === 'error';
     const tag = isError
       ? `${c.red}${c.bold}❌ ERROR${c.reset}`
-      : `${c.yellow}${c.bold}⚠️  WARN ${c.reset}`;
+      : `${c.yellow}${c.bold}🟡 WARN ${c.reset}`;
 
     const location = `${c.gray}${issue.file}:${issue.line}:${issue.character}${c.reset}`;
     console.log(`${tag} ${location} -> ${issue.message}`);
+
+    if (isGitHubActions) {
+      const relativePath = path.relative(process.cwd(), issue.file);
+      console.log(
+        `::${issue.severity} file=${relativePath},line=${issue.line},col=${issue.character}::${issue.message}`
+      );
+    }
   }
   console.log();
 }

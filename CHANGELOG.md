@@ -5,6 +5,13 @@ Todos los cambios notables en este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/)
 y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [0.8.0] - 2026-08-27
+
+### Added
+- Entrada programática (`src/api.ts` -> `dist/api.js`) para consumir `any-hunter` como librería de Node.js.
+- Exportación de tipos TypeScript (`dist/api.d.ts`) y configuración de `exports` en `package.json`.
+- Pruebas unitarias para validar las exportaciones del punto de entrada programático.
+
 ## [0.7.0] - 2026-08-27
 
 ### Added

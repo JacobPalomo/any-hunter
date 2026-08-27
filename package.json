@@ -1,13 +1,19 @@
 {
   "name": "any-hunter",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Auditor estático del AST para medir la salud de tipos en proyectos TypeScript",
   "type": "module",
   "bin": {
     "any-hunter": "./dist/index.js"
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/api.js",
+  "types": "./dist/api.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/api.d.ts",
+      "import": "./dist/api.js"
+    }
+  },
   "files": [
     "dist"
   ],

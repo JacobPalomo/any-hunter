@@ -72,6 +72,24 @@ any-hunter ./apps/web/tsconfig.json --threshold=95
 
 ---
 
+## 💻 Uso Programático (API)
+
+Puedes importar y usar el motor de `any-hunter` directamente en tus scripts de TypeScript o JavaScript:
+
+```typescript
+import { analyzeProject, analyzeCode } from 'any-hunter';
+
+// Analizar un proyecto completo
+const { projectScore, projectIssues } = analyzeProject('./tsconfig.json');
+console.log(`Puntaje de salud: ${projectScore}/100`);
+
+// Analizar código en memoria
+const snippetIssues = analyzeCode('snippet.ts', 'let x: any = 10;');
+console.log(snippetIssues);
+```
+
+---
+
 ## 📋 Reglas Auditadas
 
 | Regla | Severidad | Penalización |

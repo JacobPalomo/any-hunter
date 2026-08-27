@@ -4,6 +4,19 @@ import { analyzeCode } from './analyzer.js';
 import { isExcluded } from './project.js';
 import fs from 'node:fs';
 import { loadConfigFile } from './config.js';
+import { analyzeCode as apiAnalyzeCode, isExcluded as apiIsExcluded } from './api.js';
+
+describe('Programmatic API Exports', () => {
+  test('debe exponer analyzeCode correctamente desde el entrypoint api.js', () => {
+    const issues = apiAnalyzeCode('test.ts', 'let x: any = 1;');
+    assert.equal(issues.length, 1);
+    assert.equal(issues[0]?.severity, 'warning');
+  });
+
+  test('debe exponer isExcluded correctamente desde el entrypoint api.js', () => {
+    assert.equal(apiIsExcluded('src/app.test.ts', ['*.test.ts']), true);
+  });
+});
 
 describe('any-hunter AST Analyzer', () => {
   test('debe detectar el uso explícito de any', () => {

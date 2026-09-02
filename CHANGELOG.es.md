@@ -5,6 +5,14 @@ Todos los cambios notables en este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/)
 y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.1.3] - 2026-09-02
+
+### Fixed
+- Se agregó el paso de compilación (`npm run build`) en `action.yml` para evitar errores `MODULE_NOT_FOUND` al ejecutar la composite Action en repositorios externos.
+
+### Changed
+- Se actualizaron los ejemplos en la documentación para apuntar a `@v1.1.3`.
+
 ## [1.1.2] - 2026-08-27
 
 ### Fixed

@@ -36,6 +36,8 @@
 
 ### 1. Initialize Configuration (Recommended)
 
+![Any Hunter initialization](.github/assets/demo-init.gif)
+
 Generate a pre-configured `.anyhunterrc.json` in your repository:
 
 ```bash
@@ -49,6 +51,8 @@ Audit your default `./tsconfig.json`:
 ```bash
 npx any-hunter
 ```
+
+![Any Hunter audit](.github/assets/demo-audit.gif)
 
 Or target a specific project with a minimum score threshold:
 
@@ -172,10 +176,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Audit TypeScript Health
-        uses: JacobPalomo/any-hunter@v1.1.1
+        uses: JacobPalomo/any-hunter@v1.1.3
         with:
           threshold: 85
-          exclude: '**/*.test.ts'
 ```
 
 ### GitHub Code Scanning (SARIF Export)

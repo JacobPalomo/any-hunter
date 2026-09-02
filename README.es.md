@@ -36,6 +36,8 @@
 
 ### 1. Inicializar Configuración (Recomendado)
 
+![Inicialización de Any Hunter](.github/assets/demo-init.gif)
+
 Genera un archivo `.anyhunterrc.json` preconfigurado en la raíz de tu proyecto:
 
 ```bash
@@ -49,6 +51,8 @@ Audita tu `./tsconfig.json` predeterminado:
 ```bash
 npx any-hunter
 ```
+
+![Auditoría de Any Hunter](.github/assets/demo-audit.gif)
 
 O apunta a un proyecto específico con un umbral de aprobación mínimo:
 
@@ -172,10 +176,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Auditar Salud de Tipos con Any-Hunter
-        uses: JacobPalomo/any-hunter@v1.1.1
+        uses: JacobPalomo/any-hunter@v1.1.3
         with:
           threshold: 85
-          exclude: '**/*.test.ts'
 ```
 
 ### GitHub Code Scanning (Exportación SARIF)
